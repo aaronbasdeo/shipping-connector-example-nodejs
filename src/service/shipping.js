@@ -1,26 +1,12 @@
-const config = require('config');
 const createError = require('http-errors');
 const upsIntegration = require('../integration/ups');
-const ShippingAddress = require('../entities/shipping-address');
-const { buildQueryString } = require('./utils');
-
+const { ShippingAddress, Shipment } = require('../entities');
 
 // Countries which can have addresses validated by UPS
 const SUPPORTED_ADDRESS_VALIDATION_COUNTRIES = ['US'];
 
 // When an ambiguous address is validated, limit the number of candidates
 const CANDIDATE_ADDRESS_LIMIT = 5;
-
-const { trackingBaseUrl } = config.get('integration.ups');
-
-function buildTrackingUrl(trackingId) {
-  const queryString = buildQueryString({
-    trackNums: trackingId,
-    'track.x': 'track',
-  });
-
-  return `${trackingBaseUrl}?${queryString}`;
-}
 
 /**
  * Validates a shipping address with UPS.
@@ -73,14 +59,7 @@ function validateShippingAddress(rawAddress) {
     .then((responseBody) => {
       // responseBody is the raw response body from UPS
       const {
-        XAVResponse: {
-          Response: {
-            ResponseStatus: { Code, Description },
-          },
-          ValidAddressIndicator,
-          AmbiguousAddressIndicator,
-          NoCandidatesIndicator,
-        }
+        XAVResponse: { ValidAddressIndicator, AmbiguousAddressIndicator, NoCandidatesIndicator }
       } = responseBody;
 
       // Use these input fields to augment candidate addresses from UPS for responses
@@ -145,12 +124,34 @@ function createShipment() {
 }
 
 /**
- * Gets the status of a UPS shipment by tracking number.
+ * Gets the status of a UPS shipment by tracking ID. Given a valid tracking ID,
+ * fetches the latest tracking status for the parcel referenced by the tracking ID.
  *
- * @param {String} trackingNumber
+ * If multiple packages are included in a shipment, the Shipping Connector will
+ * pick out the package that corresponds to the tracking ID. Each package has its own
+ * tracking ID and getting the status of any of these IDs will return the same shipment
+ * with multiple packages.
+ *
+ * At this time, only UPS Parcels are supported by this tracking API. UPS Freight is
+ * not supported.
+ *
+ * A successful request will return a Shipment object, which contains
+ * the tracking ID, shipment ID (same as the tracking ID), status URL, status code,
+ * and status text.
+ *
+ * @param {String} trackingId
  */
-function getTrackingStatus(trackingNumber) {
-  return upsIntegration.sendTrackingRequest(trackingNumber);
+function getTrackingStatus(trackingId) {
+  return upsIntegration.sendTrackingRequest(trackingId)
+    .then((responseBody) => {
+      try {
+        return Shipment.fromUPSShipment(responseBody.TrackResponse.Shipment);
+      } catch (err) {
+        throw createError(502, 'UPS returned an invalid TrackingStatus response', {
+          context: { cause: err.message },
+        });
+      }
+    });
 }
 
 module.exports = {

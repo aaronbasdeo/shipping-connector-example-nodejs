@@ -12,7 +12,6 @@ const {
   username,
   password,
   baseUrl,
-  trackingBaseUrl
 } = config.get('integration.ups');
 
 /**

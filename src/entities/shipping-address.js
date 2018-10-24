@@ -76,7 +76,7 @@ class ShippingAddress {
           case 'type': return { field: error.property.split('.').slice(-1)[0], message: 'incorrect.type' };
           case 'required': return { field: error.argument, message: 'required' };
           case 'additionalProperties': return { field: error.argument, message: 'not.allowed' };
-          default: return { field: error.argument, message: error.name, error }
+          default: return { field: error.argument, message: error.name }
         }
       });
     }

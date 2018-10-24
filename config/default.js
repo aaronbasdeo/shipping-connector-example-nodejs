@@ -25,7 +25,13 @@ module.exports = {
       // Customer Integration Environment base URL
       baseUrl: 'https://wwwcie.ups.com/rest',
 
+      // The UPS API requires username and password in every request
+      username: '',
+      password: '',
+
       // Access Key (requested via https://www.ups.com/upsdeveloperkit)
+      // This is required in addition to the MyUPS username and password in every request
+      // except for the Tracking Status API
       accessKey: '',
 
       // Base URL for browser-based tracking tool

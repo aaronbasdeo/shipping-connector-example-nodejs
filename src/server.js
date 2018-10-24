@@ -1,5 +1,6 @@
 const express = require('express');
 const logger = require('morgan');
+const createError = require('http-errors');
 
 const indexRouter = require('./routes/index');
 const shipmentsV1Router = require('./routes/api-shipments-v1');
@@ -22,12 +23,7 @@ app.use('/', indexRouter);
 app.use('/api/shipments/v1', shipmentsV1Router);
 
 // "Route Not Found" middleware - return a 404 and JSON response
-app.use((req, res, next) => {
-  const err = new Error('Not found');
-  err.statusCode = 404;
-
-  return next(err);
-});
+app.use((req, res, next) => next(createError(404, 'Not found')));
 
 // Middleware: error handling (converts Errors to HTTP responses)
 app.use(errorHandlerMiddleware);

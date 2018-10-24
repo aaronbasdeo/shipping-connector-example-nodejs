@@ -5,6 +5,8 @@ module.exports = {
     ups: {
       baseUrl: 'UPS_BASE_URL',
       accessKey: 'UPS_ACCESS_KEY',
+      username: 'UPS_USERNAME',
+      password: 'UPS_PASSWORD',
     }
   }
 };

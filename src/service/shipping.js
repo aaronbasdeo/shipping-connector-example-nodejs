@@ -1,0 +1,161 @@
+const config = require('config');
+const createError = require('http-errors');
+const upsIntegration = require('../integration/ups');
+const ShippingAddress = require('../entities/shipping-address');
+const { buildQueryString } = require('./utils');
+
+
+// Countries which can have addresses validated by UPS
+const SUPPORTED_ADDRESS_VALIDATION_COUNTRIES = ['US'];
+
+// When an ambiguous address is validated, limit the number of candidates
+const CANDIDATE_ADDRESS_LIMIT = 5;
+
+const { trackingBaseUrl } = config.get('integration.ups');
+
+function buildTrackingUrl(trackingId) {
+  const queryString = buildQueryString({
+    trackNums: trackingId,
+    'track.x': 'track',
+  });
+
+  return `${trackingBaseUrl}?${queryString}`;
+}
+
+/**
+ * Validates a shipping address with UPS.
+ *
+ * Some local validation is performed to ensure that the address object
+ * is well-formed according to the Shipping Connector spec.
+ *
+ * It also enforces business constraints such as limiting the address
+ * validation to US addresses (due to UPS limitations).
+ *
+ * Finally, it makes the API call to UPS and parses the response to determine
+ * if the address is valid or not. UPS normalizes the addresses using the USPS
+ * database instead of validating individual address fields. This means that
+ * an address is considered "invalid" by UPS if it does not match any address.
+ *
+ * Another case is where the address is ambiguous, matching 2 + addresses
+ * in the USPS database. In the current Shipping Connector spec, this is an
+ * invalid address. Candidate addresses are returned in the response context
+ * to assist with debugging for now.
+ *
+ * A successful validation results in the candidate address being returned.
+ *
+ * @param {Object} rawAddress
+ */
+function validateShippingAddress(rawAddress) {
+  const address = new ShippingAddress(rawAddress);
+
+  // Check for malformed payload (missing props, wrong types, etc)
+  const validationErrors = address.validate();
+  if (validationErrors) {
+    throw createError(422, 'Invalid address', {
+      errorCode: 'invalid.address',
+      errorDetail: {
+        message: 'address.is.malformed',
+        detail: validationErrors,
+      },
+    });
+  }
+
+  // Business constraint: UPS only supports address validation on US addresses.
+  // If the provided address is not US, return 501 NOT IMPLEMENTED.
+  if (!SUPPORTED_ADDRESS_VALIDATION_COUNTRIES.includes(address.country)) {
+    throw createError(501, 'Unsupported country', {
+      errorCode: 'unsupported.country',
+      errorDetail: 'country.cannot.be.validated.by.ups',
+    });
+  }
+
+  return upsIntegration.sendAddressValidationRequest(address)
+    .then((responseBody) => {
+      // responseBody is the raw response body from UPS
+      const {
+        XAVResponse: {
+          Response: {
+            ResponseStatus: { Code, Description },
+          },
+          ValidAddressIndicator,
+          AmbiguousAddressIndicator,
+          NoCandidatesIndicator,
+        }
+      } = responseBody;
+
+      // Use these input fields to augment candidate addresses from UPS for responses
+      const { name, company, phone, email } = address;
+
+      // UPS indicators are either omitted or present with a value of ''
+      if (ValidAddressIndicator === '') {
+        // Valid address - return it
+        const candidateAddress = ShippingAddress.fromUPSAddress(
+          responseBody.XAVResponse.Candidate.AddressKeyFormat, {
+            name,
+            company,
+            phone,
+            email,
+          });
+
+        return { candidateAddress };
+      } else if (AmbiguousAddressIndicator === '') {
+        // Ambiguous address matches multiple addresses in USPS database
+
+        // Build array of candidate addresses to return in context
+        const candidateAddresses = responseBody.XAVResponse.Candidate.slice(0, CANDIDATE_ADDRESS_LIMIT)
+          .map(candidate => ShippingAddress.fromUPSAddress(candidate.AddressKeyFormat, { name, company, phone, email }));
+
+        throw createError(422, 'Invalid address', {
+          errorCode: 'invalid.address',
+          errorDetail: {
+            message: 'ambiguous.address.multiple.results',
+            detail: [],
+          },
+          context: { candidateAddresses },
+        });
+      } else if (NoCandidatesIndicator === '') {
+        // No matching addresses are found
+        throw createError(422, 'Invalid address', {
+          errorCode: 'invalid.address',
+          errorDetail: {
+            message: 'no.matching.addresses.found',
+            detail: [],
+          },
+        });
+      } else {
+        throw createError(500, 'Unexpected response from UPS API', { context: responseBody });
+      }
+    });
+}
+
+/**
+ * TODO
+ */
+function getQuotes() {
+  // TODO
+  return upsIntegration.sendQuotesRequest();
+}
+
+/**
+ * TODO
+ */
+function createShipment() {
+  // TODO
+  return upsIntegration.sendShipmentRequest();
+}
+
+/**
+ * Gets the status of a UPS shipment by tracking number.
+ *
+ * @param {String} trackingNumber
+ */
+function getTrackingStatus(trackingNumber) {
+  return upsIntegration.sendTrackingRequest(trackingNumber);
+}
+
+module.exports = {
+  validateShippingAddress,
+  getQuotes,
+  createShipment,
+  getTrackingStatus,
+};

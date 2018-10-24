@@ -1,24 +1,19 @@
 const randomstring = require('randomstring');
 
 const REQUEST_ID_HEADER_NAME = 'X-ShippingConnector-Request-Id';
-
-/**
- * Generate a unique request ID with the specified length (default: 16 bytes)
- */
-function generateRequestId(length = 16) {
-  return randomstring.generate({ length });
-}
+const REQUEST_ID_LENGTH = 16;
 
 /**
  * Inject request ID into a response header and the request context for route
- * handlers to use.
+ * handlers to use. The request ID is used to identify all log messages associated
+ * with a single request when debugging an issue by reading the logs.
  *
  * @param {express.Request} req
  * @param {express.Response} res
  * @param {Function} next
  */
 function injectRequestId(req, res, next) {
-  const requestId = generateRequestId();
+  const requestId = randomstring.generate({ length: REQUEST_ID_LENGTH });
 
   // Set the request ID in the response header
   res.append(REQUEST_ID_HEADER_NAME, requestId);

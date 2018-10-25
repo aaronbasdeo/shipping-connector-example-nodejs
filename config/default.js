@@ -29,13 +29,27 @@ module.exports = {
       username: '',
       password: '',
 
-      // Access Key (requested via https://www.ups.com/upsdeveloperkit)
-      // This is required in addition to the MyUPS username and password in every request
-      // except for the Tracking Status API
+      // Access is required in addition to the MyUPS username and password in every request
+      // Access keys can be requested via https://www.ups.com/upsdeveloperkit
       accessKey: '',
 
-      // Base URL for browser-based tracking tool
+      // Base URL for building tracking links
       trackingBaseUrl: 'https://wwwapps.ups.com/WebTracking/track',
+
+      // If true, the connector will attempt to get negotiated rates when requesting shipping quotes
+      useNegotiatedRates: false,
+
+      // When getting rates and creating shipments, use this info for the shipper
+      shipperInfo: {
+        name: 'AppDirect', // Individual or company name
+        shipperNumber: '12345',
+        street1: '650 California Street',
+        street2: 'FL25',
+        city: 'San Francisco',
+        stateCode: 'CA',
+        zip: '94108',
+        country: 'US',
+      },
     },
 
     appdirect: {

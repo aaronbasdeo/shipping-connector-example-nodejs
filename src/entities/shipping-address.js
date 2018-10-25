@@ -1,4 +1,4 @@
-const { validateShippingAddress } = require('../validation/validation');
+const { validateShippingAddress } = require('../validation');
 
 /**
  * The ShippingAddress entity represents a generic address that is consumed
@@ -11,17 +11,41 @@ class ShippingAddress {
     Object.assign(this, srcObject);
   }
 
-  toUPSAddress() {
+  getNameValue() {
+    return [this.name, this.company].filter(Boolean).join(', ');
+  }
+
+  getAddressLineValue() {
+    return [this.street1, this.street2].filter(Boolean).join(', ');
+  }
+
+  /**
+   * Converts this ShippingAddress to the UPS format.
+   */
+  toUPSValidationAddress() {
     return {
       // ConsigneeName is a person or business (or concatenation if both are present)
-      ConsigneeName: [this.name, this.company].filter(Boolean).join(', '),
+      ConsigneeName: this.getNameValue(),
 
       // Input has two address lines, so concat them into one comma-separated line
-      AddressLine: [this.street1, this.street2].filter(Boolean).join(', '),
+      AddressLine: this.getAddressLineValue(),
       PoliticalDivision2: this.city,
       PoliticalDivision1: this.stateCode,
       PostcodePrimaryLow: this.zip,
       CountryCode: this.country,
+    };
+  }
+
+  toUPSQuoteRequestAddress() {
+    return {
+      Name: this.getNameValue(),
+      Address: {
+        AddressLine: this.getAddressLineValue(),
+        City: this.city,
+        StateProvinceCode: this.stateCode,
+        PostalCode: this.zip,
+        CountryCode: this.country,
+      },
     };
   }
 
@@ -61,8 +85,11 @@ class ShippingAddress {
   }
 
   /**
-   * Attempts
-   * @param {*} address
+   * Validates a ShippingAdress using a schema. This implementation either returns false
+   * (no validation errors) or a non-empty array of { field, message } objects which
+   * represent field-level errors.
+   *
+   * @param {ShippingAddress} address
    */
   static validateAddress(address) {
     const validation = validateShippingAddress(address);
@@ -82,10 +109,6 @@ class ShippingAddress {
     }
 
     return validationResult;
-
-    return !validation.valid
-      ? validation.errors.map(error => ({ field: error.argument instanceof Array ? error.argument[0] : error.argument, message: error.name, error }))
-      : false;
   }
 
   validate() {

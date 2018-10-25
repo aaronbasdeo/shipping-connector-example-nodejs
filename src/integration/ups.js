@@ -43,7 +43,7 @@ function buildRequestBody(bodyObject) {
  * indicate a problem in the UPS service or a bug in the shipping connector.
  *
  * Some remarks:
- * - UPS API often returns 200 when an error occurs so you need to inspect the response body to detect errors
+ * - UPS API often returns 200 when an error occurs so you need to inspect the response body to detect errors.
  * - According to the UPS documentation, all error responses (Faults) will have some common fields including
  *   a faultCode which refers back to their troubleshooting guide.
  * - This function returns 400 if the fault indicates a client-side problem or a 502 if the problem is on the
@@ -67,7 +67,12 @@ function detectAndThrowError(responseBody) {
 /**
  * Sends an Address Validation request using UPS street-level validation.
  *
- * @param {ShippingAddress} address
+ * The address param should be a well-formed, UPS-format address object.
+ *
+ * This function returns the raw UPS response object if it indicates a successful
+ * request; otherwise, this call will throw an Error representing the UPS fault.
+ *
+ * @param {Object} address
  */
 function sendAddressValidationRequest(address) {
   const options = {
@@ -79,7 +84,7 @@ function sendAddressValidationRequest(address) {
           RequestAction: 'XAV',
           RequestOption: '1', // Perform address validation (1), not classification (2)
         },
-        AddressKeyFormat: address.toUPSAddress(),
+        AddressKeyFormat: address,
       },
     }),
   };
@@ -88,14 +93,50 @@ function sendAddressValidationRequest(address) {
     .then(detectAndThrowError);
 }
 
-function sendQuotesRequest() {
-  return Promise.reject(createError(501, 'Not implemented yet'));
+/**
+ * Sends a Rates request using the UPS Rates API. Shipments containing multiple
+ * parcels can be rated; in this scenario, the API will return multiple rates
+ * and a total.
+ *
+ * This function returns the raw UPS response object if it indicates a successful
+ * request; otherwise, this call will throw an Error representing the UPS fault.
+ *
+ * @param {Object} quoteRequest
+ */
+function sendQuotesRequest(quoteRequest) {
+  const options = {
+    uri: `${baseUrl}/Rate`,
+    json: true,
+    body: buildRequestBody({
+      RateRequest: {
+        Request: {
+          RequestOption: 'Rate',
+        },
+        Shipment: quoteRequest,
+      },
+    }),
+  };
+
+  return request.post(options)
+    .then(detectAndThrowError);
 }
 
+/**
+ * TODO
+ */
 function sendShipmentRequest() {
   return Promise.reject(createError(501, 'Not implemented yet'));
 }
 
+/**
+ * Sends a shipment status request to UPS. UPS responds with the entire
+ * shipment object - this function returns the entire response object.
+ *
+ * This function returns the raw UPS response object if it indicates a successful
+ * request; otherwise, this call will throw an Error representing the UPS fault.
+ *
+ * @param {String} trackingId
+ */
 function sendTrackingRequest(trackingId) {
   const options = {
     uri: `${baseUrl}/Track`,

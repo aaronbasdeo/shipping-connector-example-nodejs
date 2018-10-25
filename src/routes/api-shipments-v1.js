@@ -40,10 +40,6 @@ function getChannel(req, res, next) {
  * Validate shipping address
  */
 router.post('/:appdChannelId/validateAddress', getChannel, (req, res, next) => {
-  if (!req.body) {
-    throw createError(400, 'Malformed request');
-  }
-
   return shippingService.validateShippingAddress(req.body)
     .then(response => res.json(response))
     .catch(next);
@@ -53,8 +49,8 @@ router.post('/:appdChannelId/validateAddress', getChannel, (req, res, next) => {
  * Get a quote with rates for a shipment to an address
  */
 router.post('/:appdChannelId/quote', getChannel, (req, res, next) => {
-  return shippingService.getQuotes()
-    .then(res.json)
+  return shippingService.getQuotes(req.body)
+    .then(response => res.json(response))
     .catch(next);
 });
 
@@ -63,7 +59,7 @@ router.post('/:appdChannelId/quote', getChannel, (req, res, next) => {
  */
 router.post('/:appdChannelId/shipment', getChannel, (req, res, next) => {
   return shippingService.createShipment()
-    .then(res.json)
+    .then(response => res.json(response))
     .catch(next);
 });
 

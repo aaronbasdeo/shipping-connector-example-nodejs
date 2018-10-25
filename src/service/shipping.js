@@ -1,6 +1,6 @@
 const createError = require('http-errors');
 const upsIntegration = require('../integration/ups');
-const { ShippingAddress, Shipment } = require('../entities');
+const { ShippingAddress, Shipment, QuoteRequest } = require('../entities');
 
 // Countries which can have addresses validated by UPS
 const SUPPORTED_ADDRESS_VALIDATION_COUNTRIES = ['US'];
@@ -55,14 +55,15 @@ function validateShippingAddress(rawAddress) {
     });
   }
 
-  return upsIntegration.sendAddressValidationRequest(address)
+  return upsIntegration.sendAddressValidationRequest(address.toUPSValidationAddress())
     .then((responseBody) => {
-      // responseBody is the raw response body from UPS
+      // responseBody is the raw response body from UPS - extract indicators
       const {
         XAVResponse: { ValidAddressIndicator, AmbiguousAddressIndicator, NoCandidatesIndicator }
       } = responseBody;
 
-      // Use these input fields to augment candidate addresses from UPS for responses
+      // Use these input fields to augment candidate addresses from UPS for responses - required
+      // because UPS does not return these properties in candidate addresses
       const { name, company, phone, email } = address;
 
       // UPS indicators are either omitted or present with a value of ''
@@ -110,9 +111,19 @@ function validateShippingAddress(rawAddress) {
 /**
  * TODO
  */
-function getQuotes() {
-  // TODO
-  return upsIntegration.sendQuotesRequest();
+function getQuotes(rawQuoteRequest) {
+  const quoteRequest = new QuoteRequest(rawQuoteRequest);
+
+  // Check whether the raw quote request is well-formed
+  const validationResult = quoteRequest.validate();
+
+  if (!validationResult.valid) {
+    throw createError(400, 'Quote request body is invalid', {
+      context: { errors: validationResult.errors }
+    });
+  }
+
+  return upsIntegration.sendQuotesRequest(quoteRequest.toUPSQuoteRequest());
 }
 
 /**

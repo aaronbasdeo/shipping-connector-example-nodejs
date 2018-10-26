@@ -1,6 +1,6 @@
 const createError = require('http-errors');
 const upsIntegration = require('../integration/ups');
-const { ShippingAddress, Shipment, QuoteRequest } = require('../entities');
+const { ShippingAddress, Shipment, QuoteRequest, Rate } = require('../entities');
 
 // Countries which can have addresses validated by UPS
 const SUPPORTED_ADDRESS_VALIDATION_COUNTRIES = ['US'];
@@ -108,9 +108,6 @@ function validateShippingAddress(rawAddress) {
     });
 }
 
-/**
- * TODO
- */
 function getQuotes(rawQuoteRequest) {
   const quoteRequest = new QuoteRequest(rawQuoteRequest);
 
@@ -123,7 +120,16 @@ function getQuotes(rawQuoteRequest) {
     });
   }
 
-  return upsIntegration.sendQuotesRequest(quoteRequest.toUPSQuoteRequest());
+  return upsIntegration.sendQuotesRequest(quoteRequest.toUPSQuoteRequest())
+    .then((responseBody) => {
+      const { RateResponse: { RatedShipment } } = responseBody;
+
+      const ratedShipmentArray = Array.isArray(RatedShipment)
+        ? RatedShipment
+        : [RatedShipment];
+
+      return ratedShipmentArray.map(Rate.fromUPSRate);
+    });
 }
 
 /**

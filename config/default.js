@@ -39,6 +39,9 @@ module.exports = {
       // If true, the connector will attempt to get negotiated rates when requesting shipping quotes
       useNegotiatedRates: false,
 
+      // Maximum number of decimal places when sending dimension numbers to UPS
+      dimensionPrecision: 2,
+
       // When getting rates and creating shipments, use this info for the shipper
       shipperInfo: {
         name: 'AppDirect', // Individual or company name

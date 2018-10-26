@@ -1,6 +1,65 @@
+const config = require('config');
+const { getMappingForLengthUnit, getMappingForWeightUnit, convert } = require('../service/unit-conversions');
+
+const { dimensionPrecision } = config.get('integration.ups');
+
+/**
+ * The Parcel class represents a single package with dimensions (length x width x height x weight).
+ *
+ * This class provides functions to convert UPS
+ */
 class Parcel {
   constructor(sourceObject) {
     Object.assign(this, sourceObject);
+  }
+
+  toUPSPackage({ originCountryCode } = {}) {
+    // UPS supports only inches or cm - take care of conversions from a valid shipping connector unit.
+    // Also note that certain origin countries are required to submit package dimensions using
+    // imperial units - the US is the main example.
+
+    // Figure out our target length unit and UPS unit
+    const {
+      adjustedUnit: adjustedLengthUnit,
+      upsUnit: upsLengthUnit,
+    } = getMappingForLengthUnit(this.lengthUnit, originCountryCode);
+
+    // Convert length dimensions to target unit
+    const [adjustedLength, adjustedWidth, adjustedHeight] = [
+      this.length, this.width, this.height
+    ].map(dimension => convert(dimension).from(this.lengthUnit).to(adjustedLengthUnit));
+
+    // Figure out our target weight unit and UPS unit
+    const {
+      adjustedUnit: adjustedWeightUnit,
+      upsUnit: upsWeightUnit,
+    } = getMappingForWeightUnit(this.weightUnit, originCountryCode);
+
+    // Convert weight dimension to target unit
+    const adjustedWeight = convert(this.weight).from(this.weightUnit).to(adjustedWeightUnit);
+
+    return {
+      PackagingType: {
+        Code: '02',
+        Description: 'Rate',
+      },
+      Dimensions: {
+        UnitOfMeasurement: {
+          Code: upsLengthUnit,
+          Description: convert().describe(adjustedLengthUnit).plural,
+        },
+        Length: +adjustedLength.toFixed(dimensionPrecision) + '', // All dimensions must be cast to strings
+        Width: +adjustedWidth.toFixed(dimensionPrecision) + '',
+        Height: +adjustedHeight.toFixed(dimensionPrecision) + '',
+      },
+      PackageWeight: {
+        UnitOfMeasurement: {
+         Code: upsWeightUnit,
+         Description: convert().describe(adjustedWeightUnit).plural,
+        },
+        Weight: +adjustedWeight.toFixed(dimensionPrecision) + '',
+      },
+    };
   }
 }
 

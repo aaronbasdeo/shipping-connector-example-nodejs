@@ -6,7 +6,11 @@ module.exports = {
     shoppingCartId: { type: 'string' },
     originAddress: { '$ref': '/ShippingAddress' },
     deliveryAddress: { '$ref': '/ShippingAddress' },
-    parcels: { type: 'array', items: { type: 'string' } },
+    parcels: {
+      type: 'array',
+      items: { '$ref': '/Parcel' },
+      minItems: 1,
+    },
   },
   required: ['shoppingCartId', 'originAddress', 'deliveryAddress', 'parcels'],
 };

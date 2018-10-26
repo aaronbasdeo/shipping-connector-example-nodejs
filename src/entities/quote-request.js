@@ -26,7 +26,7 @@ class QuoteRequest {
       shoppingCartId,
       originAddress: new ShippingAddress(sourceObject.originAddress),
       deliveryAddress: new ShippingAddress(sourceObject.deliveryAddress),
-      parcels: sourceObject.parcels.map(Parcel),
+      parcels: sourceObject.parcels.map(p => new Parcel(p)),
     });
   }
 
@@ -35,53 +35,7 @@ class QuoteRequest {
       Shipper, // Populated from config
       ShipTo: this.deliveryAddress.toUPSQuoteRequestAddress(),
       ShipFrom: this.originAddress.toUPSQuoteRequestAddress(),
-      Service: {
-        Code: '03',
-        Description: 'Rate Request',
-      },
-      Package: [{
-        PackagingType: {
-          Code: '02',
-          Description: 'Rate',
-        },
-        Dimensions: {
-          UnitOfMeasurement: {
-            Code: 'IN',
-            Description: 'inches',
-          },
-          Length: '5',
-          Width: '4',
-          Height: '3',
-        },
-        PackageWeight: {
-          UnitOfMeasurement: {
-            Code: 'Lbs',
-            Description: 'Pounds',
-          },
-          Weight: '1',
-        },
-      }, {
-        PackagingType: {
-          Code: '02',
-          Description: 'Rate',
-        },
-        Dimensions: {
-          UnitOfMeasurement: {
-            Code: 'IN',
-            Description: 'inches',
-          },
-          Length: '10',
-          Width: '10',
-          Height: '10',
-        },
-        PackageWeight: {
-          UnitOfMeasurement: {
-            Code: 'Lbs',
-            Description: 'Pounds',
-          },
-          Weight: '20',
-        },
-      }],
+      Package: this.parcels.map(parcel => parcel.toUPSPackage({ originCountryCode: this.originAddress.country })),
       ShipmentRatingOptions: useNegotiatedRates ? { NegotiatedRatesIndicator: '' } : undefined,
     };
   }

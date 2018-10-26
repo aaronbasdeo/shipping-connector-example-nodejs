@@ -110,7 +110,7 @@ function sendQuotesRequest(quoteRequest) {
     body: buildRequestBody({
       RateRequest: {
         Request: {
-          RequestOption: 'Rate',
+          RequestOption: 'Shop', // Get list of rates
         },
         Shipment: quoteRequest,
       },

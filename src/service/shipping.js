@@ -108,6 +108,18 @@ function validateShippingAddress(rawAddress) {
     });
 }
 
+/**
+ * Given a quote request (shipper, shipFrom, shipTo, parcels), gets a list of rates
+ * from UPS.
+ *
+ * It handles some of the business rules and behaviors of UPS, such as:
+ * - Shipments that originate in the US must have parcel dimensions specified in
+ *   imperial units (shipments from other countries can use metric or imperial).
+ * - Unit conversions between Shipping Connector units (ft, yd, m, mm, oz, g) to
+ *   UPS-accepted units (in, cm, lb, kg).
+ *
+ * @param {Object} rawQuoteRequest
+ */
 function getQuotes(rawQuoteRequest) {
   const quoteRequest = new QuoteRequest(rawQuoteRequest);
 

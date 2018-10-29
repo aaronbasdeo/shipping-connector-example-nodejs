@@ -33,6 +33,9 @@ module.exports = {
       // Access keys can be requested via https://www.ups.com/upsdeveloperkit
       accessKey: '',
 
+      // UPS Account Number (used for billing when creating shipments)
+      accountNumber: '',
+
       // Base URL for building tracking links
       trackingBaseUrl: 'https://wwwapps.ups.com/WebTracking/track',
 

@@ -61,6 +61,16 @@ class Parcel {
       },
     };
   }
+
+  toParcelModel() {
+    return this;
+  }
+
+  static fromParcelModel(parcelModel) {
+    const { length, width, height, lengthUnit, weight, weightUnit } = parcelModel;
+
+    return new Parcel({ length, width, height, lengthUnit, weight, weightUnit });
+  }
 }
 
 module.exports = Parcel;

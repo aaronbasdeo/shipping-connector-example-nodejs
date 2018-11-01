@@ -62,3 +62,4 @@ typings/
 
 # env file
 .env
+*.sqlite

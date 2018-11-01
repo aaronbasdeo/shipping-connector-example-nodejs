@@ -40,6 +40,20 @@ class QuoteRequest {
     };
   }
 
+  toShipmentModel() {
+    const { shoppingCartId } = this;
+    const originAddressModel = this.originAddress.toAddressModel();
+    const deliveryAddressModel = this.deliveryAddress.toAddressModel();
+    const parcelModels = this.parcels.map(p => p.toParcelModel());
+
+    return {
+      shoppingCartId,
+      originAddressModel,
+      deliveryAddressModel,
+      parcelModels,
+    };
+  }
+
   /**
    * Validates a QuoteRequest-shaped object. Returns the raw response from the jsonschema
    * call.

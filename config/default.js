@@ -20,6 +20,20 @@ module.exports = {
    */
   sharedAuthSecret: '',
 
+  db: {
+    dialect: 'sqlite',
+
+    logging: false,
+
+    define: {
+      freezeTableNames: true,
+    },
+
+    sync: { force: true },
+
+    storage: 'db.sqlite',
+  },
+
   integration: {
     ups: {
       // Customer Integration Environment base URL

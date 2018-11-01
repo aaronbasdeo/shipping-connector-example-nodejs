@@ -28,6 +28,28 @@ class Rate {
     Object.assign(this, sourceObject);
   }
 
+  toResponse() {
+    return {
+      id: this.uuid,
+      carrier: this.carrier,
+      serviceLevel: this.serviceLevel,
+      price: this.price,
+      currencyCode: this.currencyCode,
+    };
+  }
+
+  toSavedRateModel() {
+    return {
+      id: this.id,
+      uuid: this.uuid,
+      code: this.code,
+      carrier: this.carrier,
+      serviceLevel: this.serviceLevel,
+      price: this.price,
+      currencyCode: this.currencyCode,
+    };
+  }
+
   static fromUPSRate(ratedShipment) {
     const {
       Service: { Code, Description },
@@ -35,7 +57,7 @@ class Rate {
     } = ratedShipment;
 
     return new Rate({
-      id: Code, // ID is just the ServiceCode from UPS
+      code: Code, // ID is just the ServiceCode from UPS
       carrier: 'UPS',
       serviceLevel: Description || getServiceLevel(Code),
       price: MonetaryValue,

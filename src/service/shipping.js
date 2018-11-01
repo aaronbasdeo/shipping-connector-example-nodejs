@@ -1,12 +1,11 @@
 const createError = require('http-errors');
+const persistence = require('./persistence');
+const { parseUPSAddressValidationResponse, parseUPSRatesResponse } = require('./response-parsing');
 const upsIntegration = require('../integration/ups');
-const { ShippingAddress, Shipment, QuoteRequest, Rate } = require('../entities');
+const { ShippingAddress, Shipment, QuoteRequest } = require('../entities');
 
 // Countries which can have addresses validated by UPS
 const SUPPORTED_ADDRESS_VALIDATION_COUNTRIES = ['US'];
-
-// When an ambiguous address is validated, limit the number of candidates
-const CANDIDATE_ADDRESS_LIMIT = 5;
 
 /**
  * Validates a shipping address with UPS.
@@ -56,56 +55,7 @@ function validateShippingAddress(rawAddress) {
   }
 
   return upsIntegration.sendAddressValidationRequest(address.toUPSValidationAddress())
-    .then((responseBody) => {
-      // responseBody is the raw response body from UPS - extract indicators
-      const {
-        XAVResponse: { ValidAddressIndicator, AmbiguousAddressIndicator, NoCandidatesIndicator }
-      } = responseBody;
-
-      // Use these input fields to augment candidate addresses from UPS for responses - required
-      // because UPS does not return these properties in candidate addresses
-      const { name, company, phone, email } = address;
-
-      // UPS indicators are either omitted or present with a value of ''
-      if (ValidAddressIndicator === '') {
-        // Valid address - return it
-        const candidateAddress = ShippingAddress.fromUPSAddress(
-          responseBody.XAVResponse.Candidate.AddressKeyFormat, {
-            name,
-            company,
-            phone,
-            email,
-          });
-
-        return { candidateAddress };
-      } else if (AmbiguousAddressIndicator === '') {
-        // Ambiguous address matches multiple addresses in USPS database
-
-        // Build array of candidate addresses to return in context
-        const candidateAddresses = responseBody.XAVResponse.Candidate.slice(0, CANDIDATE_ADDRESS_LIMIT)
-          .map(candidate => ShippingAddress.fromUPSAddress(candidate.AddressKeyFormat, { name, company, phone, email }));
-
-        throw createError(422, 'Invalid address', {
-          errorCode: 'invalid.address',
-          errorDetail: {
-            message: 'ambiguous.address.multiple.results',
-            detail: [],
-          },
-          context: { candidateAddresses },
-        });
-      } else if (NoCandidatesIndicator === '') {
-        // No matching addresses are found
-        throw createError(422, 'Invalid address', {
-          errorCode: 'invalid.address',
-          errorDetail: {
-            message: 'no.matching.addresses.found',
-            detail: [],
-          },
-        });
-      } else {
-        throw createError(500, 'Unexpected response from UPS API', { context: responseBody });
-      }
-    });
+    .then((responseBody) => parseUPSAddressValidationResponse(responseBody, address));
 }
 
 /**
@@ -118,9 +68,13 @@ function validateShippingAddress(rawAddress) {
  * - Unit conversions between Shipping Connector units (ft, yd, m, mm, oz, g) to
  *   UPS-accepted units (in, cm, lb, kg).
  *
+ * A Quote Request will persist details of the request as a Shipment in the database
+ * along with saved addresses and parcels. This allows the quote details to be recalled
+ * when
+ *
  * @param {Object} rawQuoteRequest
  */
-function getQuotes(rawQuoteRequest) {
+async function getQuotes(rawQuoteRequest) {
   const quoteRequest = new QuoteRequest(rawQuoteRequest);
 
   // Check whether the raw quote request is well-formed
@@ -132,16 +86,31 @@ function getQuotes(rawQuoteRequest) {
     });
   }
 
-  return upsIntegration.sendQuotesRequest(quoteRequest.toUPSQuoteRequest())
-    .then((responseBody) => {
-      const { RateResponse: { RatedShipment } } = responseBody;
+  // Fetch rates from UPS
+  const rates = await upsIntegration.sendQuotesRequest(quoteRequest.toUPSQuoteRequest())
+    .then(parseUPSRatesResponse);
 
-      const ratedShipmentArray = Array.isArray(RatedShipment)
-        ? RatedShipment
-        : [RatedShipment];
 
-      return ratedShipmentArray.map(Rate.fromUPSRate);
-    });
+  // Persist the shipment & addresses, obtaining the shipment ID
+  const shipmentModel = quoteRequest.toShipmentModel();
+  const { shipmentId } = await persistence
+    .createShipment(shipmentModel)
+    .then((result) => ({ shipmentId: result.id }));
+
+  // Persist the shipment parcels
+  const parcelModels = shipmentModel.parcelModels;
+  const parcelResults = await Promise.all(parcelModels.map((parcelModel) => {
+    return persistence.createParcel(parcelModel, shipmentId);
+  }));
+
+  // Persist the saved rates
+  const rateResults = await Promise.all(rates.map((rate) => {
+    const rateModel = rate.toSavedRateModel();
+    return persistence.createSavedRate(rateModel, shipmentId)
+      .then(rateResponse => Object.assign(rate, { uuid: rateResponse.uuid }));
+  }));
+
+  return rateResults.map(r => r.toResponse());
 }
 
 /**

@@ -19,6 +19,21 @@ class ShippingAddress {
     return [this.street1, this.street2].filter(Boolean).join(', ');
   }
 
+  toAddressModel() {
+    return {
+      name: this.name,
+      company: this.company,
+      street1: this.street1,
+      street2: this.street2,
+      city: this.city,
+      stateCode: this.stateCode,
+      zip: this.zip,
+      country: this.country,
+      phone: this.phone,
+      email: this.email,
+    };
+  }
+
   /**
    * Converts this ShippingAddress to the UPS format.
    */

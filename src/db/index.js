@@ -64,6 +64,13 @@ const Shipment = db.define('Shipment', {
   status: Sequelize.STRING,
   shipmentNumber: Sequelize.STRING, // In UPS, shipmentNumber === trackingNumber
   trackingNumber: Sequelize.STRING,
+  lastTrackingUpdate: Sequelize.DATE,
+  weightAmount: Sequelize.STRING,
+  weightUnits: Sequelize.STRING,
+  chargeAmount: Sequelize.STRING,
+  chargeCurrency: Sequelize.STRING,
+  labelFormat: Sequelize.STRING,
+  labelData: Sequelize.BLOB,
 }, {
   indexes: [
     { unique: true, fields: ['id'] },

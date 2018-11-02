@@ -118,6 +118,10 @@ class Shipment {
       'status',
       'shipmentNumber',
       'trackingNumber',
+      'weightAmount',
+      'weightUnits',
+      'chargeAmount',
+      'chargeCurrency',
     ]));
 
     // Note: doesn't load full address objects or parcel ids
@@ -137,6 +141,12 @@ class Shipment {
       status: this.status || ShipmentStatusEnum.UNKNOWN,
       shipmentNumber: this.shipmentNumber,
       trackingNumber: this.trackingNumber,
+      weightAmount: this.weightAmount,
+      weightUnits: this.weightUnits,
+      chargeAmount: this.chargeAmount,
+      chargeCurrency: this.chargeCurrency,
+      labelFormat: this.labelFormat,
+      labelData: this.labelData,
     };
   }
 

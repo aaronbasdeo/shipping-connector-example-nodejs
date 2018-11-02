@@ -88,9 +88,9 @@ function parseUPSShipmentRequestResponse(responseBody) {
           TrackingNumber: trackingNumber,
           ShippingLabel: {
             ImageFormat: {
-              Code: shippingLabelFormat,
+              Code: labelFormat,
             },
-            GraphicImage: shippingLabelRawData,
+            GraphicImage: labelData,
           }
         }
       }
@@ -100,14 +100,12 @@ function parseUPSShipmentRequestResponse(responseBody) {
   return {
     shipmentNumber,
     trackingNumber,
-    chargeCurrency,
     chargeAmount,
     chargeCurrency,
-    chargeAmount,
     weightUnits,
     weightAmount,
-    shippingLabelFormat,
-    shippingLabelRawData,
+    labelFormat,
+    labelData,
   };
 }
 

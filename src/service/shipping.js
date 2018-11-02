@@ -140,6 +140,12 @@ async function createShipment(rawShipmentRequest) {
     throw createError(412, `Provided shoppingCartId [${shoppingCartId}] does not match the saved value [${shipment.shoppingCartId}]`);
   }
 
+  // Ensure that a shipment hasn't already been created with this rate
+  // If the shipment already has a tracking number, reject the request
+  if (!!shipment.trackingNumber) {
+    throw createError(409, `A shipment [${shipment.trackingNumber}] already exists for this rate code.`);
+  }
+
   // Fetch origin and delivery addresses for the shipment
   const [originAddress, deliveryAddress] = await Promise.all(
     [shipment.originAddressId, shipment.deliveryAddressId].map(persistence.getAddressById)

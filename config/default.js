@@ -39,6 +39,9 @@ module.exports = {
       // Customer Integration Environment base URL
       baseUrl: 'https://wwwcie.ups.com/rest',
 
+      // Use this to enable the UPS production environment
+      // baseUrl: 'https://onlinetools.ups.com/rest',
+
       // The UPS API requires username and password in every request
       username: '',
       password: '',
@@ -59,16 +62,21 @@ module.exports = {
       // Maximum number of decimal places when sending dimension numbers to UPS
       dimensionPrecision: 2,
 
+      // Label format (can be GIF, EPL, ZPL, or STARPL)
+      labelFormat: 'GIF',
+
       // When getting rates and creating shipments, use this info for the shipper
       shipperInfo: {
-        name: 'AppDirect', // Individual or company name
-        shipperNumber: '12345',
-        street1: '650 California Street',
-        street2: 'FL25',
-        city: 'San Francisco',
-        stateCode: 'CA',
-        zip: '94108',
-        country: 'US',
+        name: '', // Individual or company name
+        shipperNumber: '',
+        taxIdentificationNumber: '',
+        street1: '',
+        street2: '',
+        city: '',
+        stateCode: '',
+        zip: '',
+        country: '',
+        phone: ''
       },
     },
 

@@ -58,7 +58,7 @@ router.post('/:appdChannelId/quote', getChannel, (req, res, next) => {
  * Create a shipment with a rate and address
  */
 router.post('/:appdChannelId/shipment', getChannel, (req, res, next) => {
-  return shippingService.createShipment()
+  return shippingService.createShipment(req.body)
     .then(response => res.json(response))
     .catch(next);
 });

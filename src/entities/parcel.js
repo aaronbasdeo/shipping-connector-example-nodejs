@@ -1,3 +1,4 @@
+const _ = require('lodash');
 const config = require('config');
 const { getMappingForLengthUnit, getMappingForWeightUnit, convert } = require('../service/unit-conversions');
 
@@ -13,7 +14,7 @@ class Parcel {
     Object.assign(this, sourceObject);
   }
 
-  toUPSPackage({ originCountryCode } = {}) {
+  toPackage({ originCountryCode }) {
     // UPS supports only inches or cm - take care of conversions from a valid shipping connector unit.
     // Also note that certain origin countries are required to submit package dimensions using
     // imperial units - the US is the main example.
@@ -39,10 +40,7 @@ class Parcel {
     const adjustedWeight = convert(this.weight).from(this.weightUnit).to(adjustedWeightUnit);
 
     return {
-      PackagingType: {
-        Code: '02',
-        Description: 'Rate',
-      },
+
       Dimensions: {
         UnitOfMeasurement: {
           Code: upsLengthUnit,
@@ -62,14 +60,44 @@ class Parcel {
     };
   }
 
+  toUPSQuoteRequestPackage({ originCountryCode } = {}) {
+    return Object.assign(this.toPackage({ originCountryCode }), {
+      PackagingType: {
+        Code: '02',
+      },
+    })
+  }
+
+  toUPSShipmentRequestPackage({ originCountryCode } = {}) {
+    return Object.assign(this.toPackage({ originCountryCode }), {
+      Packaging: {
+        Code: '02',
+      },
+    })
+  }
+
   toParcelModel() {
-    return this;
+    return _.pick(this, [
+      'id',
+      'length',
+      'width',
+      'height',
+      'lengthUnit',
+      'weight',
+      'weightUnit',
+    ]);
   }
 
   static fromParcelModel(parcelModel) {
-    const { length, width, height, lengthUnit, weight, weightUnit } = parcelModel;
-
-    return new Parcel({ length, width, height, lengthUnit, weight, weightUnit });
+    return new Parcel({
+      id: parcelModel.id,
+      length: Number(parcelModel.length),
+      width: Number(parcelModel.width),
+      height: Number(parcelModel.height),
+      lengthUnit: parcelModel.lengthUnit,
+      weight: Number(parcelModel.weight),
+      weightUnit: parcelModel.weightUnit,
+    });
   }
 }
 

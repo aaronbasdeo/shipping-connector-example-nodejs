@@ -11,7 +11,9 @@ const operatorsAliases = {
 // Initialize database instance
 const db = new Sequelize(Object.assign({}, dbConfig, { operatorsAliases }));
 
+// ====================================
 // MODELS
+// ====================================
 
 const Address = db.define('Address', {
   id: {
@@ -58,7 +60,10 @@ const Shipment = db.define('Shipment', {
       model: Address,
       key: 'id',
     }
-  }
+  },
+  status: Sequelize.STRING,
+  shipmentNumber: Sequelize.STRING, // In UPS, shipmentNumber === trackingNumber
+  trackingNumber: Sequelize.STRING,
 }, {
   indexes: [
     { unique: true, fields: ['id'] },
@@ -87,6 +92,7 @@ const Parcel = db.define('Parcel', {
 }, {
   indexes: [
     { unique: true, fields: ['id'] },
+    { fields: ['shipment'] },
   ],
 });
 
@@ -130,6 +136,9 @@ function testConnection() {
 
 /**
  * Syncs the DB structure with the models defined above.
+ *
+ * If a { force: true } option is provided, existing tables will be DROPped before the new
+ * schema is loaded.
  */
 function syncModels() {
   return db.sync({ force: true });

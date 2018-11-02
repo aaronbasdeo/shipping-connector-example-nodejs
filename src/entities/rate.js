@@ -1,3 +1,5 @@
+const _ = require('lodash');
+
 // UPS does not return descriptive names for their services - use this mapping instead
 const SERVICE_CODE_NAME_MAPPING = Object.freeze({
   '01': 'UPS Next Day Air',
@@ -39,15 +41,29 @@ class Rate {
   }
 
   toSavedRateModel() {
-    return {
-      id: this.id,
-      uuid: this.uuid,
-      code: this.code,
-      carrier: this.carrier,
-      serviceLevel: this.serviceLevel,
-      price: this.price,
-      currencyCode: this.currencyCode,
-    };
+    return _.pick(this, [
+      'id',
+      'uuid',
+      'shipment',
+      'code',
+      'carrier',
+      'serviceLevel',
+      'price',
+      'currencyCode',
+    ]);
+  }
+
+  static fromSavedRateModel(savedRateModel) {
+    return new Rate(_.pick(savedRateModel, [
+      'id',
+      'uuid',
+      'shipment',
+      'code',
+      'carrier',
+      'serviceLevel',
+      'price',
+      'currencyCode',
+    ]));
   }
 
   static fromUPSRate(ratedShipment) {

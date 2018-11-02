@@ -35,7 +35,7 @@ class QuoteRequest {
       Shipper, // Populated from config
       ShipTo: this.deliveryAddress.toUPSQuoteRequestAddress(),
       ShipFrom: this.originAddress.toUPSQuoteRequestAddress(),
-      Package: this.parcels.map(parcel => parcel.toUPSPackage({ originCountryCode: this.originAddress.country })),
+      Package: this.parcels.map(parcel => parcel.toUPSQuoteRequestPackage({ originCountryCode: this.originAddress.country })),
       ShipmentRatingOptions: useNegotiatedRates ? { NegotiatedRatesIndicator: '' } : undefined,
     };
   }
@@ -52,16 +52,6 @@ class QuoteRequest {
       deliveryAddressModel,
       parcelModels,
     };
-  }
-
-  /**
-   * Validates a QuoteRequest-shaped object. Returns the raw response from the jsonschema
-   * call.
-   *
-   * @param {Object} quoteRequest
-   */
-  static validateQuoteRequest(quoteRequest) {
-    return validateQuoteRequest(quoteRequest);
   }
 
   /**

@@ -1,3 +1,4 @@
+const _ = require('lodash');
 const { validateShippingAddress } = require('../validation');
 
 /**
@@ -11,27 +12,56 @@ class ShippingAddress {
     Object.assign(this, srcObject);
   }
 
+  /**
+   * Gets the name value for this address (a concatenation of name and company).
+   */
   getNameValue() {
     return [this.name, this.company].filter(Boolean).join(', ');
   }
 
+  /**
+   * Gets the address line value for this address (concatenating lines 1 and 2
+   * into a single comma-separated line).
+   */
   getAddressLineValue() {
     return [this.street1, this.street2].filter(Boolean).join(', ');
   }
 
+  /**
+   * Builds a ShippingAddress object suitable for persistence in a DB.
+   */
   toAddressModel() {
-    return {
-      name: this.name,
-      company: this.company,
-      street1: this.street1,
-      street2: this.street2,
-      city: this.city,
-      stateCode: this.stateCode,
-      zip: this.zip,
-      country: this.country,
-      phone: this.phone,
-      email: this.email,
-    };
+    return _.pick(this, [
+      'name',
+      'company',
+      'street1',
+      'street2',
+      'city',
+      'stateCode',
+      'zip',
+      'country',
+      'phone',
+      'email',
+    ]);
+  }
+
+  /**
+   * Loads a ShippingAddress from a DB model.
+   * @param {Object} addressModel
+   */
+  static fromAddressModel(addressModel) {
+    return new ShippingAddress(_.pick(addressModel, [
+      'name',
+      'company',
+      'street1',
+      'street2',
+      'city',
+      'stateCode',
+      'zip',
+      'country',
+      'phone',
+      'email',
+    ]));
   }
 
   /**
@@ -51,6 +81,9 @@ class ShippingAddress {
     };
   }
 
+  /**
+   * Formats a ShippingAddress for a UPS Quote Request.
+   */
   toUPSQuoteRequestAddress() {
     return {
       Name: this.getNameValue(),
@@ -62,6 +95,17 @@ class ShippingAddress {
         CountryCode: this.country,
       },
     };
+  }
+
+  /**
+   * Formats a ShippingAddress for a UPS Shipment Request.
+   */
+  toUPSShipmentRequestAddress() {
+    return Object.assign(this.toUPSQuoteRequestAddress(), {
+      Phone: {
+        Number: this.phone,
+      },
+    });
   }
 
   /**
@@ -126,6 +170,9 @@ class ShippingAddress {
     return validationResult;
   }
 
+  /**
+   * Validates this ShippingAddress according to the Shipping Connector schema.
+   */
   validate() {
     return ShippingAddress.validateAddress(this);
   }

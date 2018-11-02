@@ -1,8 +1,8 @@
 const createError = require('http-errors');
 const persistence = require('./persistence');
-const { parseUPSAddressValidationResponse, parseUPSRatesResponse } = require('./response-parsing');
+const { parseUPSAddressValidationResponse, parseUPSRatesResponse, parseUPSShipmentRequestResponse } = require('./response-parsing');
 const upsIntegration = require('../integration/ups');
-const { ShippingAddress, Shipment, QuoteRequest } = require('../entities');
+const { ShippingAddress, Shipment, QuoteRequest, ShipmentRequest, Rate, Parcel } = require('../entities');
 
 // Countries which can have addresses validated by UPS
 const SUPPORTED_ADDRESS_VALIDATION_COUNTRIES = ['US'];
@@ -70,7 +70,7 @@ function validateShippingAddress(rawAddress) {
  *
  * A Quote Request will persist details of the request as a Shipment in the database
  * along with saved addresses and parcels. This allows the quote details to be recalled
- * when
+ * when a shipment request is made.
  *
  * @param {Object} rawQuoteRequest
  */
@@ -90,11 +90,9 @@ async function getQuotes(rawQuoteRequest) {
   const rates = await upsIntegration.sendQuotesRequest(quoteRequest.toUPSQuoteRequest())
     .then(parseUPSRatesResponse);
 
-
   // Persist the shipment & addresses, obtaining the shipment ID
   const shipmentModel = quoteRequest.toShipmentModel();
-  const { shipmentId } = await persistence
-    .createShipment(shipmentModel)
+  const { shipmentId } = await persistence.createShipment(shipmentModel)
     .then((result) => ({ shipmentId: result.id }));
 
   // Persist the shipment parcels
@@ -113,12 +111,60 @@ async function getQuotes(rawQuoteRequest) {
   return rateResults.map(r => r.toResponse());
 }
 
-/**
- * TODO
- */
-function createShipment() {
-  // TODO
-  return upsIntegration.sendShipmentRequest();
+async function createShipment(rawShipmentRequest) {
+  const shipmentRequest = new ShipmentRequest(rawShipmentRequest);
+  const { shoppingCartId, rateId } = shipmentRequest;
+
+  // Check whether the shipment request is well-formed
+  const validationResult = shipmentRequest.validate();
+
+  if (!validationResult.valid) {
+    throw createError(400, 'Shipment request body is invalid', {
+      context: { errors: validationResult.errors }
+    });
+  }
+
+  // Fetch the SavedRate for the provided rateId
+  const savedRateModel = await persistence.getSavedRateByUuid(shipmentRequest.rateId);
+  if (!savedRateModel) {
+    throw createError(404, `No rate found for rateId ${rateId}`);
+  }
+  const rate = Rate.fromSavedRateModel(savedRateModel);
+
+  const shipmentId = rate.shipment;
+  const shipmentModel = await persistence.getShipmentById(shipmentId);
+  const shipment = Shipment.fromShipmentModel(shipmentModel);
+
+  // Ensure that shoppingCartId matches the one from the quote
+  if (shipment.shoppingCartId !== shoppingCartId) {
+    throw createError(412, `Provided shoppingCartId [${shoppingCartId}] does not match the saved value [${shipment.shoppingCartId}]`);
+  }
+
+  // Fetch origin and delivery addresses for the shipment
+  const [originAddress, deliveryAddress] = await Promise.all(
+    [shipment.originAddressId, shipment.deliveryAddressId].map(persistence.getAddressById)
+  ).then(results => results.map(ShippingAddress.fromAddressModel));
+
+  shipmentRequest.rate = rate;
+  shipmentRequest.shipment = shipment;
+  shipmentRequest.originAddress = originAddress;
+  shipmentRequest.deliveryAddress = deliveryAddress;
+
+    // Fetch all parcels for the shipment
+  shipmentRequest.parcels = await persistence.getParcelsByShipmentId(shipmentId)
+    .then(parcels => parcels.map(Parcel.fromParcelModel));
+
+  // Make UPS request
+  const shipmentResponse = await upsIntegration.sendShipmentRequest(shipmentRequest.toUPSShipmentRequest())
+    .then(parseUPSShipmentRequestResponse);
+
+  // Merge the response details into the Shipment object
+  Object.assign(shipment, shipmentResponse);
+
+  // Persist the changes to DB
+  await persistence.updateShipment(shipment.toShipmentModel());
+
+  return shipment.toResponse();
 }
 
 /**
@@ -143,7 +189,7 @@ function getTrackingStatus(trackingId) {
   return upsIntegration.sendTrackingRequest(trackingId)
     .then((responseBody) => {
       try {
-        return Shipment.fromUPSShipment(responseBody.TrackResponse.Shipment);
+        return Shipment.fromUPSShipment(responseBody.TrackResponse.Shipment).toResponse();
       } catch (err) {
         throw createError(502, 'UPS returned an invalid TrackingStatus response', {
           context: { cause: err.message },

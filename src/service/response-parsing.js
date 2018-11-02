@@ -67,7 +67,52 @@ function parseUPSRatesResponse(responseBody) {
   return ratedShipmentArray.map(Rate.fromUPSRate);
 }
 
+function parseUPSShipmentRequestResponse(responseBody) {
+  const {
+    ShipmentResponse: {
+      ShipmentResults: {
+        ShipmentCharges: {
+          TotalCharges: {
+            CurrencyCode: chargeCurrency,
+            MonetaryValue: chargeAmount,
+          },
+        },
+        BillingWeight: {
+          UnitOfMeasurement: {
+            Code: weightUnits,
+          },
+          Weight: weightAmount,
+        },
+        ShipmentIdentificationNumber: shipmentNumber,
+        PackageResults: {
+          TrackingNumber: trackingNumber,
+          ShippingLabel: {
+            ImageFormat: {
+              Code: shippingLabelFormat,
+            },
+            GraphicImage: shippingLabelRawData,
+          }
+        }
+      }
+    }
+  } = responseBody;
+
+  return {
+    shipmentNumber,
+    trackingNumber,
+    chargeCurrency,
+    chargeAmount,
+    chargeCurrency,
+    chargeAmount,
+    weightUnits,
+    weightAmount,
+    shippingLabelFormat,
+    shippingLabelRawData,
+  };
+}
+
 module.exports = {
   parseUPSAddressValidationResponse,
   parseUPSRatesResponse,
+  parseUPSShipmentRequestResponse,
 };

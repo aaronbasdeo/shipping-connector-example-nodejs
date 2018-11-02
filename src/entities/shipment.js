@@ -1,3 +1,4 @@
+const _ = require('lodash');
 const config = require('config');
 const moment = require('moment');
 const ShipmentStatusEnum = require('./shipment-status');
@@ -99,12 +100,57 @@ class Shipment {
     const trackingUrl = buildTrackingUrl(TrackingNumber);
 
     return new Shipment({
-      shipmentId: TrackingNumber,
-      shipmentTrackingNumber: TrackingNumber,
-      shipmentStatusUrl: trackingUrl,
-      shipmentStatus: statusMapping[Type] || ShipmentStatusEnum.UNKNOWN,
-      shipmentStatusText: Description,
+      shipmentNumber: TrackingNumber,
+      trackingNumber: TrackingNumber,
+      status: statusMapping[Type] || ShipmentStatusEnum.UNKNOWN,
+      statusText: Description,
     });
+  }
+
+  /**
+   * Loads a Shipment object from the DB.
+   * @param {Object} shipmentModel
+   */
+  static fromShipmentModel(shipmentModel) {
+    const shipment = new Shipment(_.pick(shipmentModel, [
+      'id',
+      'shoppingCartId',
+      'status',
+      'shipmentNumber',
+      'trackingNumber',
+    ]));
+
+    // Note: doesn't load full address objects or parcel ids
+    shipment.originAddressId = shipmentModel.originAddress;
+    shipment.deliveryAddressId = shipmentModel.deliveryAddress;
+
+    return shipment;
+  }
+
+  /**
+   * Builds a Shipment model suitable for persistence in the DB.
+   */
+  toShipmentModel() {
+    return {
+      id: this.id,
+      shoppingCartId: this.shoppingCartId,
+      status: this.status || ShipmentStatusEnum.UNKNOWN,
+      shipmentNumber: this.shipmentNumber,
+      trackingNumber: this.trackingNumber,
+    };
+  }
+
+  /**
+   * Generates a ShippingConnectorSpec-compliant response object.
+   */
+  toResponse() {
+    return {
+      shipmentId: this.shipmentNumber || this.trackingNumber,
+      shipmentTrackingNumber: this.trackingNumber,
+      shipmentStatusUrl: buildTrackingUrl(this.trackingNumber),
+      shipmentStatus: this.status || ShipmentStatusEnum.UNKNOWN,
+      shipmentStatusText: this.statusText,
+    };
   }
 }
 

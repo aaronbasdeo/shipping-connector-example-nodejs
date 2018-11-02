@@ -7,6 +7,10 @@ const {
   },
 } = require('../db');
 
+function getPlainObject(result) {
+  return !!result ? result.get({ plain: true }) : null;
+}
+
 /**
  * Inserts an Address into the database, returning the persisted object.
  *
@@ -14,7 +18,7 @@ const {
  */
 function createAddress(addressModel) {
   return Address.create(addressModel)
-    .then(result => result.get({ plain: true }));
+    .then(getPlainObject);
 }
 
 /**
@@ -36,29 +40,80 @@ function createShipment(shipmentModel) {
         deliveryAddress: deliveryAddressModel.id,
       }));
     })
-    .then(result => result.get({ plain: true }));
+    .then(getPlainObject);
 }
 
 /**
  * Inserts a Parcel into the database, returning the persisted object.
  *
  * @param {Object} parcelModel
- * @param {string} shipmentId
+ * @param {int} shipmentId
  */
 function createParcel(parcelModel, shipmentId) {
   return Parcel.create(Object.assign(parcelModel, { shipment: shipmentId }))
-    .then(result => result.get({ plain: true }));
+    .then(getPlainObject);
 }
 
 /**
  * Inserts a SavedRate into the database, returning the persisted object.
  *
  * @param {Object} rateModel
- * @param {string} shipmentId
+ * @param {int} shipmentId
  */
 function createSavedRate(rateModel, shipmentId) {
   return SavedRate.create(Object.assign(rateModel, { shipment: shipmentId }))
-    .then(result => result.get({ plain: true }));
+    .then(getPlainObject);
+}
+
+/**
+ * Gets a SavedRate from the database by UUID.
+ *
+ * @param {string} uuid
+ */
+function getSavedRateByUuid(uuid) {
+  return SavedRate.findOne({ where: { uuid } })
+    .then(getPlainObject);
+}
+
+/**
+ * Gets a Shipment by numeric shipment ID.
+ *
+ * @param {int} shipmentId
+ */
+function getShipmentById(shipmentId) {
+  return Shipment.findById(shipmentId)
+    .then(getPlainObject);
+}
+
+/**
+ * Gets an array of Parcels by numeric shipment ID.
+ *
+ * @param {string} shipmentId
+ */
+function getParcelsByShipmentId(shipmentId) {
+  return Parcel.findAll({ where: { shipment: shipmentId }})
+    .then(parcels => parcels.map(getPlainObject));
+}
+
+/**
+ * Gets an Address by its numeric ID.
+ *
+ * @param {int} addressId
+ */
+function getAddressById(addressId) {
+  return Address.findById(addressId)
+    .then(getPlainObject);
+}
+
+/**
+ * Updates an existing Shipment.
+ *
+ * @param {Object} shipmentModel
+ */
+function updateShipment(shipmentModel) {
+  const { id } = shipmentModel;
+  return Shipment.update(shipmentModel, { where: { id } })
+    .then(([affectedCount, affectedRows]) => ({ affectedCount, affectedRows }));
 }
 
 module.exports = {
@@ -66,4 +121,9 @@ module.exports = {
   createShipment,
   createParcel,
   createSavedRate,
+  getSavedRateByUuid,
+  getShipmentById,
+  getParcelsByShipmentId,
+  getAddressById,
+  updateShipment,
 };

@@ -12,10 +12,12 @@ const {
   username,
   password,
   baseUrl,
+  labelFormat,
 } = config.get('integration.ups');
 
 /**
- * Builds a request body for a UPS request.
+ * Builds a request body for a UPS request. Note that UPS requires the username and password
+ * even when providing an API access key.
  *
  * Automatically includes the UPSSecurity object with authentication credentials.
  *
@@ -122,10 +124,32 @@ function sendQuotesRequest(quoteRequest) {
 }
 
 /**
- * TODO
+ * Sends a shipment creation request to UPS.
+ *
+ * This function returns the raw UPS response object if it indicates a successful
+ * request; otherwise, this call will throw an Error representing the UPS fault.
  */
-function sendShipmentRequest() {
-  return Promise.reject(createError(501, 'Not implemented yet'));
+function sendShipmentRequest(shipmentRequest) {
+  const options = {
+    uri: `${baseUrl}/Ship`,
+    json: true,
+    body: buildRequestBody({
+      ShipmentRequest: {
+        Request: {
+          RequestOption: 'validate',
+        },
+        Shipment: shipmentRequest,
+        LabelSpecification: {
+          LabelImageFormat: {
+            Code: labelFormat,
+          },
+        },
+      },
+    }),
+  };
+
+  return request.post(options)
+    .then(detectAndThrowError);
 }
 
 /**

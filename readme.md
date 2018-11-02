@@ -10,6 +10,8 @@ This sample connector is intended to be used for demonstration only; production 
 - continuous integration/deployment
 - service hardening
 
+Tracking updates are implemented using polling since UPS does not offer tracking webhooks. To overcome this, run `npm run tracking-update` regularly using cron or another scheduler.
+
 ## Dependencies
 
 The Shipping Connector does not have any external dependencies other than UPS itself. It uses SQLite as a persistence layer, but this can be easily changed to use another RDBMS such as Postgres or MySQL.

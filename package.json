@@ -3,7 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "nodemon index.js"
+    "start": "nodemon index.js",
+    "tracking-update": "node tracking-update.js"
   },
   "dependencies": {
     "config": "^2.0.1",

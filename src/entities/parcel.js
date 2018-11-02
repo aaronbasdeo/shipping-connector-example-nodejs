@@ -14,6 +14,11 @@ class Parcel {
     Object.assign(this, sourceObject);
   }
 
+  /**
+   * Generates a UPS package payload, taking care of unit conversions.
+   *
+   * @param {string} options.originCountryCode required in order to set the correct units (metric or imperial)
+   */
   toPackage({ originCountryCode }) {
     // UPS supports only inches or cm - take care of conversions from a valid shipping connector unit.
     // Also note that certain origin countries are required to submit package dimensions using
@@ -60,6 +65,11 @@ class Parcel {
     };
   }
 
+  /**
+   * Generates a UPS payload with formatting for Quote Requests.
+   *
+   * @param {string} options.originCountryCode required in order to set the correct units (metric or imperial)
+   */
   toUPSQuoteRequestPackage({ originCountryCode } = {}) {
     return Object.assign(this.toPackage({ originCountryCode }), {
       PackagingType: {
@@ -68,6 +78,10 @@ class Parcel {
     })
   }
 
+  /**
+   * Generates a UPS payload with formatting for Shipment Requests.
+   * @param {string} options.originCountryCode required in order to set the correct units (metric or imperial)
+   */
   toUPSShipmentRequestPackage({ originCountryCode } = {}) {
     return Object.assign(this.toPackage({ originCountryCode }), {
       Packaging: {
@@ -76,6 +90,9 @@ class Parcel {
     })
   }
 
+  /**
+   * Builds an object that is suitable for DB persistence.
+   */
   toParcelModel() {
     return _.pick(this, [
       'id',
@@ -88,6 +105,10 @@ class Parcel {
     ]);
   }
 
+  /**
+   * Builds a Parcel object from a DB model.
+   * @param {Object} parcelModel
+   */
   static fromParcelModel(parcelModel) {
     return new Parcel({
       id: parcelModel.id,

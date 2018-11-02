@@ -97,7 +97,6 @@ class Shipment {
     }
 
     const { Status: { Type, Description } } = latestActivity;
-    const trackingUrl = buildTrackingUrl(TrackingNumber);
 
     return new Shipment({
       shipmentNumber: TrackingNumber,

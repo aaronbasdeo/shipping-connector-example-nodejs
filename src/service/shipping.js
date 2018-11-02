@@ -111,6 +111,20 @@ async function getQuotes(rawQuoteRequest) {
   return rateResults.map(r => r.toResponse());
 }
 
+/**
+ * Given a rate UUID, create a Shipment using the addresses and parcels from the original
+ * quote request.
+ *
+ * This function throws errors in the following conditions:
+ * - Invalid request body (400)
+ * - Rate UUID doesn't exist (404)
+ * - Invalid API responses from UPS (400 or 502)
+ * - Rate UUID has been used to create a shipment already (409)
+ *
+ * Results of a successful shipment request are persisted to the DB.
+ *
+ * @param {*} rawShipmentRequest
+ */
 async function createShipment(rawShipmentRequest) {
   const shipmentRequest = new ShipmentRequest(rawShipmentRequest);
   const { shoppingCartId, rateId } = shipmentRequest;
@@ -188,6 +202,8 @@ async function createShipment(rawShipmentRequest) {
  * A successful request will return a Shipment object, which contains
  * the tracking ID, shipment ID (same as the tracking ID), status URL, status code,
  * and status text.
+ *
+ * Note that the results of this call are not persisted to the DB.
  *
  * @param {String} trackingId
  */

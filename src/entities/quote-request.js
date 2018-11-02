@@ -18,6 +18,10 @@ const Shipper = {
   },
 };
 
+/**
+ * A QuoteRequest represents the input fields provided in order to request shipping
+ * quotes from UPS.
+ */
 class QuoteRequest {
   constructor(sourceObject) {
     const { shoppingCartId } = sourceObject;

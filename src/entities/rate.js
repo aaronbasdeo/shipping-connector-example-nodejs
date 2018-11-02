@@ -25,6 +25,13 @@ function getServiceLevel(serviceCode) {
   return SERVICE_CODE_NAME_MAPPING[serviceCode] || 'unknown';
 }
 
+/**
+ * A Rate represents a saved shipping rate price and service level as it relates
+ * to a Shipment. UPS doesn't create unique codes for its rates so the connector
+ * will generate a UUID that uniquely identifies a rate for a shipment. This UUID
+ * is later used to generate a shipment request with the associated parcels and
+ * addresses from the original quote.
+ */
 class Rate {
   constructor(sourceObject) {
     Object.assign(this, sourceObject);

@@ -27,8 +27,9 @@ function createAddress(addressModel) {
  * and deliveryAddress.
  *
  * @param {*} shipmentModel
+ * @param {string} appdPartnerId
  */
-function createShipment(shipmentModel) {
+function createShipment(shipmentModel, appdPartnerId) {
   const { originAddressModel, deliveryAddressModel } = shipmentModel;
 
   // First, create the two Addresses
@@ -38,6 +39,7 @@ function createShipment(shipmentModel) {
       return Shipment.create(Object.assign(shipmentModel, {
         originAddress: originAddressModel.id,
         deliveryAddress: deliveryAddressModel.id,
+        appdPartnerId: appdPartnerId
       }));
     })
     .then(getPlainObject);
@@ -86,6 +88,16 @@ function getShipmentById(shipmentId) {
 }
 
 /**
+ * Gets all unfinished Shipments.
+ *
+ */
+function getUnfinishedShipments() {
+  return Shipment.findAll({
+    where: { status: ['UNKNOWN', 'TRANSIT', 'PRE_TRANSIT'] }
+  }).then(shipments => shipments.map(getPlainObject));
+}
+
+/**
  * Gets an array of Parcels by numeric shipment ID.
  *
  * @param {string} shipmentId
@@ -126,4 +138,5 @@ module.exports = {
   getParcelsByShipmentId,
   getAddressById,
   updateShipment,
+  getUnfinishedShipments
 };

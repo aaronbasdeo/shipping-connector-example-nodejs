@@ -61,6 +61,7 @@ const Shipment = db.define('Shipment', {
       key: 'id',
     }
   },
+  appdPartnerId: Sequelize.STRING,
   status: Sequelize.STRING,
   shipmentNumber: Sequelize.STRING, // In UPS, shipmentNumber === trackingNumber
   trackingNumber: Sequelize.STRING,

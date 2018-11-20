@@ -3,7 +3,6 @@ const persistence = require('./persistence');
 const { parseUPSAddressValidationResponse, parseUPSRatesResponse, parseUPSShipmentRequestResponse } = require('./response-parsing');
 const upsIntegration = require('../integration/ups');
 const { ShippingAddress, Shipment, QuoteRequest, ShipmentRequest, Rate, Parcel } = require('../entities');
-
 // Countries which can have addresses validated by UPS
 const SUPPORTED_ADDRESS_VALIDATION_COUNTRIES = ['US'];
 
@@ -73,8 +72,9 @@ function validateShippingAddress(rawAddress) {
  * when a shipment request is made.
  *
  * @param {Object} rawQuoteRequest
+ * @param {string} appdPartnerId
  */
-async function getQuotes(rawQuoteRequest) {
+async function getQuotes(rawQuoteRequest, appdPartnerId) {
   const quoteRequest = new QuoteRequest(rawQuoteRequest);
 
   // Check whether the raw quote request is well-formed
@@ -92,7 +92,7 @@ async function getQuotes(rawQuoteRequest) {
 
   // Persist the shipment & addresses, obtaining the shipment ID
   const shipmentModel = quoteRequest.toShipmentModel();
-  const { shipmentId } = await persistence.createShipment(shipmentModel)
+  const { shipmentId } = await persistence.createShipment(shipmentModel, appdPartnerId)
     .then((result) => ({ shipmentId: result.id }));
 
   // Persist the shipment parcels

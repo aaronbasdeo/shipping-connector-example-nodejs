@@ -10,14 +10,14 @@ const router = express.Router();
 router.use(authMiddleware);
 
 /**
- * Quasi-middleware which is applied to all routes with the appdChannelId path
+ * Quasi-middleware which is applied to all routes with the appdPartnerId path
  * parameter. It looks up the AppDirect channel which matches the path param,
  * adding the config object to the request context "channelConfig" property.
  *
  * This is implemented inline in route handlers as the path parameters object
  * is not populated until a route is matched.
  *
- * If an AppDirect channel config is not found for the appdChannelId, a 404
+ * If an AppDirect partner config is not found for the appdPartnerId, a 404
  * response is returned.
  *
  * @param {express.Request} req
@@ -25,11 +25,11 @@ router.use(authMiddleware);
  * @param {Function} next
  */
 function getChannel(req, res, next) {
-  const { appdChannelId } = req.params;
-  const config = appdirectIntegration.getChannelConfiguration(appdChannelId);
+  const { appdPartnerId } = req.params;
+  const config = appdirectIntegration.getChannelConfiguration(appdPartnerId);
 
   if (!config) {
-    next(createError(404, `Unknown channel ID "${appdChannelId}"`));
+    next(createError(404, `Unknown channel ID "${appdPartnerId}"`));
   } else {
     req.channelConfig = config;
     next();
@@ -39,7 +39,7 @@ function getChannel(req, res, next) {
 /**
  * Validate shipping address
  */
-router.post('/:appdChannelId/validateAddress', getChannel, (req, res, next) => {
+router.post('/:appdPartnerId/validateAddress', getChannel, (req, res, next) => {
   return shippingService.validateShippingAddress(req.body)
     .then(response => res.json(response))
     .catch(next);
@@ -48,8 +48,8 @@ router.post('/:appdChannelId/validateAddress', getChannel, (req, res, next) => {
 /**
  * Get a quote with rates for a shipment to an address
  */
-router.post('/:appdChannelId/quote', getChannel, (req, res, next) => {
-  return shippingService.getQuotes(req.body)
+router.post('/:appdPartnerId/quote', getChannel, (req, res, next) => {
+  return shippingService.getQuotes(req.body, req.params.appdPartnerId)
     .then(response => res.json(response))
     .catch(next);
 });
@@ -57,7 +57,7 @@ router.post('/:appdChannelId/quote', getChannel, (req, res, next) => {
 /**
  * Create a shipment with a rate and address
  */
-router.post('/:appdChannelId/shipment', getChannel, (req, res, next) => {
+router.post('/:appdPartnerId/shipment', getChannel, (req, res, next) => {
   return shippingService.createShipment(req.body)
     .then(response => res.json(response))
     .catch(next);
@@ -66,7 +66,7 @@ router.post('/:appdChannelId/shipment', getChannel, (req, res, next) => {
 /**
  * Get tracking status of a shipment
  */
-router.get('/:appdChannelId/tracking/status', getChannel, (req, res, next) => {
+router.get('/:appdPartnerId/tracking/status', getChannel, (req, res, next) => {
   // Parse query args
   let { trackingNumber = '' } = req.query;
 

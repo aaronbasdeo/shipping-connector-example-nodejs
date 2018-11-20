@@ -20,7 +20,7 @@ app.use(requestTrackingMiddleware);
 
 // Mount routes
 app.use('/', indexRouter);
-app.use('/api/shipments/v1', shipmentsV1Router);
+app.use('/shipments/v1', shipmentsV1Router);
 
 // "Route Not Found" middleware - return a 404 and JSON response
 app.use((req, res, next) => next(createError(404, 'Not found')));

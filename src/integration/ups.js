@@ -168,7 +168,10 @@ function sendTrackingRequest(trackingId) {
     body: buildRequestBody({
       TrackRequest: {
         Request: {
-          RequestAction: 'Track',
+          RequestOption: '1',
+          TransactionReference: {
+             CustomerContext: 'Just a test'
+          }
         },
         InquiryNumber: trackingId,
       },

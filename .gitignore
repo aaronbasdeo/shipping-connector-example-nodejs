@@ -62,4 +62,7 @@ typings/
 
 # env file
 .env
-*.sqlite
+*.sqlite*
+
+# local config file
+config/local.js

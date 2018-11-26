@@ -1,6 +1,6 @@
 ## Description:
 
-This repository is a sample Shipping Connector as defined by the [v1 tech design](https://appdirect.jira.com/wiki/spaces/APPDEV/pages/456589480/APPD-1974+Shipping+Connector+API+tech+design) and the [Swagger doc](https://github.com/AppDirect/appdevices-api-docs/blob/master/rubicon/partner/shipping-connector/swagger.yaml).
+This repository is a sample Shipping Connector as defined by the [Shipping connector guide](https://help.appdirect.com/appmarket/Default.htm#Integration/ship-intro.htm%3FTocPath%3DIntegration%7CShipping%2520connector%2520guide%7C_____0).
 
 It implements a shipping interface for UPS Parcel shipping.
 

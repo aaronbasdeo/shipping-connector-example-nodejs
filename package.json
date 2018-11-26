@@ -1,5 +1,6 @@
 {
   "name": "shipping-connector-example-nodejs",
+  "license": "Apache-2.0",
   "version": "0.0.0",
   "private": true,
   "scripts": {
@@ -24,5 +25,8 @@
   },
   "devDependencies": {
     "nodemon": "^1.18.4"
+  },
+  "engines": {
+    "node": ">=8.11.2"
   }
 }
